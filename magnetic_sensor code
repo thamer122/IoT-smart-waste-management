@@ -1,3 +1,5 @@
+  // go to all code the main idea there
+
   int magnetic_sensor(){
   val = digitalRead(sensor);
   if(val == HIGH){
