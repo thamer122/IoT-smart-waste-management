@@ -1,0 +1,38 @@
+int ultrasonic1(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_1, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_1, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_1, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_1, HIGH);
+  delay(1000);
+  // Calculating the distance1
+  distance1 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance1: ");
+  Serial.print(distance1);
+  Serial.println(" cm");
+   if(distance1 >= 80 && distance1 <= 90){
+   //in OKorNOT1 it's (full) you can change 1_value ult 1
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  else{
+  if(distance1 >= 80 && distance1 >= 90){
+  //in OKorNOT1 it's (empty) you can change 1_value ult 1
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  else{
+  if(distance1 > 140 && distance1 >= 1200){
+  //in OKorNOT1 it's an (error) you can change 1_value ult 1
+    OKorNOT1 = "1_value ult 1";
+  }
+  else{
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  }
+  }
+return distance1;
+}
