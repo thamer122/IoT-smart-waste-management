@@ -1,0 +1,22 @@
+  int magnetic_sensor(){
+  val = digitalRead(sensor);
+  if(val == HIGH){
+  counter1 = 0;
+ Serial.print("time no detected ");
+ Serial.println(counter1);
+ delay(5000);
+  }
+  do{ 
+   val = digitalRead(sensor);
+  if(val == LOW){
+  counter1 = counter1 + 1;
+  val = digitalRead(sensor);
+  if(val == LOW){
+  Serial.print("time detected  = ");
+  Serial.println(counter1);;
+   delay (1000);
+  }
+  }
+  } while(val == LOW);
+  return counter1;
+  }
