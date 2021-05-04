@@ -1,32 +1,340 @@
-# Prerequisites
-*.d
+#include <SoftwareSerial.h>
+SoftwareSerial gprsSerial(13,12); //configuration pins GSM SIM900
+#include <String.h>
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+#define echoPin_1 3  //configuration pins ultrasonic 1
+#define trigPin_1 2  //configuration pins ultrasonic 1
 
-# Precompiled Headers
-*.gch
-*.pch
+#define echoPin_2 5  //configuration pins ultrasonic 2
+#define trigPin_2 4  //configuration pins ultrasonic 2
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+#define echoPin_3 7  //configuration pins ultrasonic 3
+#define trigPin_3 6  //configuration pins ultrasonic 3
 
-# Fortran module files
-*.mod
-*.smod
+#define echoPin_4 9  //configuration pins ultrasonic 4
+#define trigPin_4 8  //configuration pins ultrasonic 4
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+#define echoPin_5 11  //configuration pins ultrasonic 5
+#define trigPin_5 10  //configuration pins ultrasonic 5
 
-# Executables
-*.exe
-*.out
-*.app
+long duration; 
+int distance1, distance2, distance3, distance4, distance5;
+String OKorNOT1, OKorNOT2, OKorNOT3, OKorNOT4, OKorNOT5;
+int sensor = 0; ////configuration pin magnetic sensor 
+int counter1;
+int counter1_1;
+int val ; 
+int value;
+
+void setup()
+{
+  gprsSerial.begin(9600); 
+  Serial.begin(9600);
+  pinMode(trigPin_1, OUTPUT);
+  pinMode(echoPin_1, INPUT); 
+  pinMode(trigPin_2, OUTPUT); 
+  pinMode(echoPin_2, INPUT); 
+  pinMode(trigPin_3, OUTPUT); 
+  pinMode(echoPin_3, INPUT); 
+  pinMode(trigPin_4, OUTPUT); 
+  pinMode(echoPin_4, INPUT); 
+  pinMode(trigPin_5, OUTPUT); 
+  pinMode(echoPin_5, INPUT); 
+  pinMode(sensor, INPUT);
+  
+}
+void loop()
+{
+  
+int distance1_1 = ultrasonic1(); 
+int distance2_2 = ultrasonic2();
+int distance3_3 = ultrasonic3();
+int distance4_4 = ultrasonic4();
+int distance5_5 = ultrasonic5();
+/////////////condition if waste is full or not, for all sensor
+
+  if(distance1_1 <= 80 && distance2_2 <= 80 && distance3_3 <= 80 && distance4_4 <= 80 && distance5_5 <= 80){
+  value = 1;
+  Serial.print("it is full =");
+  Serial.println(value);
+  }else{
+   value = 0;
+  Serial.print("is empty =");
+  Serial.println(value);
+  }
+  
+
+do{
+val = digitalRead(sensor);
+if(val == HIGH){
+counter1_1 = magnetic_sensor();
+delay(100);}
+}while(val == LOW);
+
+connection(distance1_1,distance2_2,distance3_3,distance4_4,distance5_5,value);
+}
+///////////////////////////////////////////////////////////////////////
+void connection(int distance1_1,int distance2_2,int distance3_3,int distance4_4,int distance5_5,int value){
+  if (gprsSerial.available())
+   Serial.write(gprsSerial.read());
+  gprsSerial.println("AT");
+  delay(1000);
+  gprsSerial.println("AT+CPIN?");
+  delay(1000);
+  gprsSerial.println("AT+CREG?");
+  delay(1000);
+  gprsSerial.println("AT+CGATT?");
+  delay(1000);
+  gprsSerial.println("AT+CIPSHUT");
+  delay(1000);
+  gprsSerial.println("AT+CIPSTATUS");
+  delay(2000);
+  gprsSerial.println("AT+CIPMUX=0");
+  delay(2000);
+  ShowSerialData();
+  // Put your APN about me zain it's my APN
+  gprsSerial.println("AT+CSTT=\"zain KSA\"");//start task and setting the APN,
+  delay(1000);
+  ShowSerialData();
+  gprsSerial.println("AT+CIICR");//bring up wireless connection
+  delay(3000);
+  ShowSerialData();
+  gprsSerial.println("AT+CIFSR");//get local IP adress
+  delay(2000);
+  ShowSerialData();
+  gprsSerial.println("AT+CIPSPRT=0");
+  delay(3000);
+  ShowSerialData();
+  gprsSerial.println("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",\"80\"");//start up the connection
+  delay(6000);
+  ShowSerialData();
+  gprsSerial.println("AT+CIPSEND");//begin send data to remote server
+  delay(4000);
+  ShowSerialData();
+  // Put your api in =(###################)
+  String str="GET https://api.thingspeak.com/update?api_key=(###################)field1=" + String(distance1_1)+ "&field2=" + String(distance2_2) + "&field3=" + String(distance3_3)+ "&field4=" + String(distance4_4)+ "&field5=" + String(distance5_5)+ "&field6=" + String(counter1_1) + "&field7=" + String(value);
+  Serial.println(str);
+  gprsSerial.println(str);//begin send data to remote server
+  delay(4000);
+  ShowSerialData();
+  gprsSerial.println((char)26);//sending
+  delay(5000);//waitting for reply, important! the time is base on the condition of internet 
+  gprsSerial.println();
+  ShowSerialData();
+  gprsSerial.println("AT+CIPSHUT");//close the connection
+  delay(100);
+  ShowSerialData();
+}
+
+void ShowSerialData()
+{
+  while(gprsSerial.available()!=0)
+  Serial.write(gprsSerial.read());
+  delay(5000); 
+}
+//////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////
+int ultrasonic1(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_1, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_1, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_1, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_1, HIGH);
+  delay(1000);
+  // Calculating the distance1
+  distance1 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance1: ");
+  Serial.print(distance1);
+  Serial.println(" cm");
+   if(distance1 >= 80 && distance1 <= 90){
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  else{
+  if(distance1 >= 80 && distance1 >= 90){
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  else{
+  if(distance1 > 140 && distance1 >= 1200){
+    OKorNOT1 = "1_value ult 1";
+  }
+  else{
+  OKorNOT1 = "1_value ult 1";
+  Serial.println(OKorNOT1);}
+  }
+  }
+return distance1;
+}
+  /////////////////////////////////////////////////////////////////////////
+int ultrasonic2(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_2, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_2, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_2, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_2, HIGH);
+  delay(1000);
+  // Calculating the distance2
+  distance2 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance2: ");
+  Serial.print(distance2);
+  Serial.println(" cm");
+  if(distance2 >= 80 && distance2 <= 90){
+  OKorNOT2 = "2_value ult 2";
+  Serial.println(OKorNOT2);}
+  else{
+  if(distance2 >= 80 && distance2 >= 90){
+  OKorNOT1 = "2_value ult 2";
+  Serial.println(OKorNOT2);}
+  else{
+  if(distance2 > 140 && distance2 >= 1200){
+    OKorNOT2 = "2_value ult 2";
+  }
+  else{
+  OKorNOT2 = "2_value ult 2";
+  Serial.println(OKorNOT2);}
+  }
+  }
+return distance2;
+}
+/////////////////////////////////////////////////////////////////////////
+ int ultrasonic3(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_3, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_3, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_3, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_3, HIGH);
+  delay(1000);
+  // Calculating the distance3
+  distance3 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance3: ");
+  Serial.print(distance3);
+  Serial.println(" cm");
+    if(distance3 >= 80 && distance3 <= 90){
+  OKorNOT3 = "3_value ult 3";
+  Serial.println(OKorNOT3);}
+  else{
+  if(distance3 >= 80 && distance3 >= 90){
+  OKorNOT3 = "3_value ult 3";
+  Serial.println(OKorNOT3);}
+  else{
+  if(distance3 > 140 && distance3 >= 1200){
+    OKorNOT3 = "3_value ult 3";
+  }
+  else{
+  OKorNOT3 = "3_value ult 3";
+  Serial.println(OKorNOT3);}
+  }
+  }
+return distance3;
+}
+  /////////////////////////////////////////////////////////////////////////
+  int ultrasonic4(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_4, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_4, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_4, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_4, HIGH);
+  delay(1000);
+  // Calculating the distance4
+  distance4 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance4: ");
+  Serial.print(distance4);
+  Serial.println(" cm");
+    if(distance4 >= 80 && distance4 <= 90){
+  OKorNOT4 = "4_value ult 4";
+  Serial.println(OKorNOT2);}
+  else{
+  if(distance4 >= 80 && distance4 >= 90){
+  OKorNOT4 = "4_value ult 4";
+  Serial.println(OKorNOT4);}
+  else{
+  if(distance4 > 140 && distance4 >= 1200){
+    OKorNOT4 = "4_value ult 4";
+  }
+  else{
+  OKorNOT4 = "4_value ult 4";
+  Serial.println(OKorNOT4);}
+  }
+  }
+return distance4;
+}
+  /////////////////////////////////////////////////////////////////////////
+int ultrasonic5(){
+  // Clears the trigPin condition
+  digitalWrite(trigPin_5, LOW);
+  delay(1000);
+  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+  digitalWrite(trigPin_5, HIGH);
+  delay(1000);
+  digitalWrite(trigPin_5, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  duration = pulseIn(echoPin_5, HIGH);
+  delay(1000);
+  // Calculating the distance5
+  distance5 = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+  // Displays the distance on the Serial Monitor
+  Serial.print("Distance5: ");
+  Serial.print(distance5);
+  Serial.println(" cm");
+    if(distance5 >= 80 && distance5 <= 90){
+  OKorNOT5 = "5_value ult 5";
+  Serial.println(OKorNOT5);}
+  else{
+  if(distance5 >= 80 && distance5 >= 90){
+  OKorNOT5 = "5_value ult 5 ";
+  Serial.println(OKorNOT5);}
+  else{
+  if(distance5 > 140 && distance5 >= 1200){
+    OKorNOT5 = "5_value ult 5";
+  }
+  else{
+  OKorNOT5 = "5_value ult 5";
+  Serial.println(OKorNOT5);}
+  }
+  }
+return distance5;
+}
+  /////////////////////////////////////////////////////////////////////////
+  int magnetic_sensor(){
+  val = digitalRead(sensor);
+  if(val == HIGH){
+  counter1 = 0;
+ Serial.print("time no detected ");
+ Serial.println(counter1);
+ delay(5000);
+  }
+  do{ 
+   val = digitalRead(sensor);
+  if(val == LOW){
+  counter1 = counter1 + 1;
+  val = digitalRead(sensor);
+  if(val == LOW){
+  Serial.print("time detected  = ");
+  Serial.println(counter1);;
+   delay (1000);
+  }
+  }
+  } while(val == LOW);
+  return counter1;
+  }
+ 
