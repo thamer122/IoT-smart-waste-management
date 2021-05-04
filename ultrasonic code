@@ -1,3 +1,5 @@
+// go to all code the main idea there
+
 int ultrasonic1(){
   // Clears the trigPin condition
   digitalWrite(trigPin_1, LOW);
